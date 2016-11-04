@@ -4,7 +4,7 @@ This was developed on an Adafruit Huzzah ESP8266 Wifi.
 
   - Periodically check Temperature and Humidity Settings
   - Maintain a Wifi Connection to your network
-  - Maintain MQTT Connection and Publish using your degined queues
+  - Maintain MQTT Connection and Publish using your designated queues
 
 This project assumes you already have an MQTT server up and running on your network. Testing was done with [Mosquitto MQTT](https://mosquitto.org/) running on Ubuntu.
 
