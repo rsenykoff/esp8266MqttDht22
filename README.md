@@ -1,4 +1,4 @@
-# ESP8266 Publish Temp / Hum Sensor Data to MQTT
+# ESP8266 Publish Temperature / Humidity Sensor Data to MQTT
 
 This was developed on an Adafruit Huzzah ESP8266 Wifi.
 
