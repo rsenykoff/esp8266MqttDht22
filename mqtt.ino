@@ -11,7 +11,7 @@
 /***************
  * Temp Sensor
  */
-#define DHTPIN 14 //input pin
+#define DHTPIN 14 //input pin on the Huzzah
 #define DHTTYPE DHT22 //sensor type - also support DHT11 and DHT21
 DHT dht(DHTPIN, DHTTYPE); //initialize sensor
 long dhtReadIntervalMillis =          60 * 1000; //can't poll more often than 2 seconds
