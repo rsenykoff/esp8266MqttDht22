@@ -49,7 +49,6 @@ unsigned long previousRedBlinkedMillis =  0;
 */
 const int blueLedPin =    2;
 int blueLedState =        HIGH;
-//long blueBlinkInterval =  10000;
 long blueBlinkInterval =  30 * 1000;
 long blueBlinkDuration =  30;
 unsigned long previousBlueBlinkedMillis = 0;
