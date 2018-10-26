@@ -13,6 +13,7 @@ This was developed on an Adafruit Huzzah ESP8266 Wifi.
 
 ## Software
 
+  - [Arduino IDE](https://www.arduino.cc/en/main/software)
   - [Adafruit MQTT Library](https://github.com/adafruit/Adafruit_MQTT_Library)
   - [Adafruit DHT Sensor Library](https://github.com/adafruit/DHT-sensor-library)
   
