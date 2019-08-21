@@ -5,16 +5,18 @@
 /***************
    Wifi
 */
-#define WIFI_SSID  "YOUR_WIFI_SSID"
-#define WLAN_PASS   "YOUR_WIFI_PASSWORD"
+//#define WIFI_SSID  ""
+//#define WLAN_PASS   ""
+const char* WIFI_SSID = "your_ssid";
+const char* WLAN_PASS = "your_wifi_password";
 
 /***************
  * Temp Sensor
  */
-#define DHTPIN 14 //input pin on the Huzzah
+#define DHTPIN 13 //input pin on the Huzzah
 #define DHTTYPE DHT22 //sensor type - also support DHT11 and DHT21
 DHT dht(DHTPIN, DHTTYPE); //initialize sensor
-long dhtReadIntervalMillis =          60 * 1000; //can't poll more often than 2 seconds
+long dhtReadIntervalMillis =          2 * 1000; //can't poll more often than 2 seconds
 unsigned long previousDhtReadMillis = 0;
 float currentTemperature = 0;
 float currentHumidity = 0;
@@ -22,14 +24,16 @@ float currentHumidity = 0;
 /***************
    MQTT
 */
-#define MQTT_SERVER      "192.168.1.250"
+#define MQTT_SERVER      "192.168.1.123"
 #define MQTT_PORT         1883
-#define MQTT_USER        "setUserHereIfNeeded"
-#define MQTT_PASS        "setPassHereIfNeeded"
+#define MQTT_USER        ""
+#define MQTT_PASS        ""
 
 /***************
    Blinkenlights
 */
+
+boolean ledsEnabled = false; //false to save power
 
 /******
    Red
@@ -61,40 +65,47 @@ Adafruit_MQTT_Client mqtt(&client, MQTT_SERVER, MQTT_PORT, MQTT_USER, MQTT_PASS)
 Adafruit_MQTT_Publish queueTemp = Adafruit_MQTT_Publish(&mqtt, "/sensors/temp/upstairslanding");
 Adafruit_MQTT_Publish queueHumidity = Adafruit_MQTT_Publish(&mqtt, "/sensors/humidity/upstairslanding");
 void MQTT_connect(); //apparently necessary for some Arduino versions with ESP8266
-const long publishingInterval =       60 * 1000;
+const long publishingInterval =       5 * 1000;
 unsigned long previousPublishMillis = 0;
 
 String messageToConsole;
 
 void setup() {
   Serial.begin(115200);
-  delay(10);
-  Serial.println(F("TempHum Sensor --> Wifi --> MQTT Publisher"));
-
-  messageToConsole = "Sent temperature to MQTT at ";
-  messageToConsole.concat(MQTT_SERVER);
-  messageToConsole.concat(" - ");
+  delay(30);
+  
+  //Serial.println(F("TempHum Sensor --> Wifi --> MQTT Publisher"));
+  dht.begin();
+  
+ // messageToConsole = "Sent temperature to MQTT at ";
+ // messageToConsole.concat(MQTT_SERVER);
+ // messageToConsole.concat(" - ");
 
   pinMode(redLedPin, OUTPUT);
   pinMode(blueLedPin, OUTPUT);
+  digitalWrite(redLedPin, HIGH);
+  digitalWrite(blueLedPin, HIGH);
 }
 
 void blinkCheck() {
-  unsigned long currentMillis = millis();
-
-  if (blueLedState == HIGH) // if off
+  if (ledsEnabled)
   {
-    if (currentMillis - previousBlueBlinkedMillis >= blueBlinkInterval) { // if time elapsed is greater than interval
+    unsigned long currentMillis = millis();
+  
+    if (blueLedState == HIGH) // if off
+    {
+      if (currentMillis - previousBlueBlinkedMillis >= blueBlinkInterval) { // if time elapsed is greater than interval
+        previousBlueBlinkedMillis = currentMillis;
+        blueLedState = LOW;
+        digitalWrite(blueLedPin, blueLedState);
+      }
+    }
+    else if (currentMillis - previousBlueBlinkedMillis >= blueBlinkDuration) // if it has been on longer than duration
+    {
       previousBlueBlinkedMillis = currentMillis;
-      blueLedState = LOW;
+      blueLedState = HIGH;
       digitalWrite(blueLedPin, blueLedState);
     }
-  }
-  else if (currentMillis - previousBlueBlinkedMillis >= blueBlinkDuration) // if it has been on longer than duration
-  {
-    previousBlueBlinkedMillis = currentMillis;
-    blueLedState = HIGH;
-    digitalWrite(blueLedPin, blueLedState);
   }
 }
 
@@ -119,14 +130,19 @@ void pollDHT22() {
 }
 
 boolean firstMessageSent = false; //use this to send first message without wait
+unsigned long firstMessageMillis = 0;
 
 void publishToMqtt() {
   unsigned long currentMillis = millis();
   if ((currentMillis - previousPublishMillis >= publishingInterval) || !firstMessageSent) {
     previousPublishMillis = currentMillis;
-    digitalWrite(redLedPin, LOW);
+    if (ledsEnabled) digitalWrite(redLedPin, LOW);
     //float dasTemp = getTemp();
-    if (! queueTemp.publish(currentTemperature) || ! queueHumidity.publish(currentHumidity)) {
+    boolean tempPublished = queueTemp.publish(currentTemperature);
+    boolean humPublished = queueHumidity.publish(currentHumidity);
+
+      if (!tempPublished || !humPublished) {
+//    if (! queueTemp.publish(currentTemperature) || ! queueHumidity.publish(currentHumidity)) {
       Serial.println("MQTT Publish Failed");
     } else {
       Serial.print(messageToConsole);
@@ -135,15 +151,16 @@ void publishToMqtt() {
       Serial.print(currentHumidity);
       Serial.println(" Humidity - ");
       firstMessageSent = true;
+      firstMessageMillis = millis();
+      //ESP.deepSleep(50e6);
     }
-    delay(30); //keep led lit for a bit
-    digitalWrite(redLedPin, HIGH);
+    if (ledsEnabled) digitalWrite(redLedPin, HIGH);
   }
 }
 
 boolean wifiCheck() {
   if (WiFi.status() != WL_CONNECTED) {
-    digitalWrite(blueLedPin, LOW);
+    if (ledsEnabled) digitalWrite(blueLedPin, LOW);
     Serial.println("*************");
     Serial.print("Connecting to ");
     Serial.println(WIFI_SSID);
@@ -152,7 +169,7 @@ boolean wifiCheck() {
     while (WiFi.status() != WL_CONNECTED) {
       delay(200);
       Serial.print(".");
-      if (i++ > 10)
+      if (i++ > 50)
       {
         Serial.println();
         return false;
@@ -162,7 +179,7 @@ boolean wifiCheck() {
     Serial.println("WiFi connected");
     Serial.println("IP address: "); Serial.println(WiFi.localIP());
     Serial.println("*************");
-    digitalWrite(blueLedPin, HIGH);
+    if (ledsEnabled) digitalWrite(blueLedPin, HIGH);
   }
   return true;
 }
@@ -175,7 +192,7 @@ boolean mqttCheck() {
   int errorMessage;
   int retries = 5;
   while ((errorMessage = mqtt.connect()) != 0) { // return value of 0 will exit the loop
-    digitalWrite(redLedPin, LOW);
+    if (ledsEnabled) digitalWrite(redLedPin, LOW);
     Serial.println(mqtt.connectErrorString(errorMessage));
     Serial.println("Establishing MQTT Connection");
     mqtt.disconnect();
@@ -185,7 +202,7 @@ boolean mqttCheck() {
       return false;
     }
   }
-  digitalWrite(redLedPin, HIGH);
+  if (ledsEnabled) digitalWrite(redLedPin, HIGH);
   Serial.println("MQTT Connection Established");
   return true;
 }
@@ -196,9 +213,23 @@ boolean connectivityCheck() {
       return true;
 }
 
+// without this approach the deep sleep 
+// may prevent the mqtt messages from being
+// sent successfully
+unsigned long waitBeforeSleepDuration = 500;
+
 void loop() {
   blinkCheck();
-  if (connectivityCheck())
+  if (firstMessageSent)
+  {
+    unsigned long currentMillis = millis();
+    if (currentMillis - firstMessageMillis >= waitBeforeSleepDuration) 
+    {
+      Serial.println("Going to sleep...");
+      ESP.deepSleep(280e6);
+    }
+  } 
+  else if (connectivityCheck())
   {
     pollDHT22();
     if (currentTemperature == 0) //did not read yet
@@ -206,4 +237,3 @@ void loop() {
     publishToMqtt();
   }
 }
-
