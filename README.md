@@ -1,5 +1,7 @@
 # ESP8266 Publish Temperature / Humidity Sensor Data to MQTT
 
+Updating my code for use with AWS IoT Core
+
 This was developed on an Adafruit Huzzah ESP8266 Wifi.
 
   - Periodically check Temperature and Humidity Settings
