@@ -9,6 +9,7 @@
 //#define WLAN_PASS   ""
 const char* WIFI_SSID = "your_ssid";
 const char* WLAN_PASS = "your_wifi_password";
+// WHAT NOT TO DO (Hardcode credentials!) ^^
 
 /***************
  * Temp Sensor
